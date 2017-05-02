@@ -37,7 +37,7 @@ defmodule SolidQueue.Worker do
             Slogger.debug(@pretty_module <> "(#{inspect self()}) succeeded handling job #{entry.id}")
             @queue.finish(entry)
           {:error, _} = err ->
-            Slogger.error(@pretty_module <> "(#{inspect self()}) errored handling job #{entry.id} #{inspect err}")
+            Slogger.error(@pretty_module <> "(#{inspect self()}) errored handling job #{entry.id}")
             @queue.errorize(entry, err)
           err ->
             Slogger.error(@pretty_module <> "(#{inspect self()}) bad return handling job #{entry.id} #{inspect err}")
