@@ -84,13 +84,14 @@ defmodule SolidQueue do
         SolidQueue.Counter.next_id(__MODULE__)
       end
 
-      def enqueue(payload, ttl_sec \\ :never) # 1 hour
-      def enqueue(payload, :never) do
-        id = next_id()
-        ts = Timestamp.now()
-        do_enqueue(id, payload, :never, ts)
-      end
-      def enqueue(payload, ttl_sec) when is_integer(ttl_sec) do
+      #no. this is a bad idea. just expire them.
+      # def enqueue(payload, ttl_sec \\ :never) # 1 hour
+      # def enqueue(payload, :never) do
+      #   id = next_id()
+      #   ts = Timestamp.now()
+      #   do_enqueue(id, payload, :never, ts)
+      # end
+      def enqueue(payload, ttl_sec \\ 60 * 60) when is_integer(ttl_sec) do
         id = next_id()
         ts = Timestamp.now()
         do_enqueue(id, payload, ts + ttl_sec, ts)
