@@ -32,13 +32,9 @@ defmodule SolidQueue.Worker do
       defp handle_pop({:ok, %Entry{payload: payload} = entry}, state) do
         #call handle_job and (:ok) finish job or {:error, _} errorize job
         Slogger.debug(@pretty_module <> "(#{inspect self()}) begins handling job #{entry.id} #{inspect entry}")
-        case handle_job(payload, state) do
-          :ok ->
-            Slogger.debug(@pretty_module <> "(#{inspect self()}) succeeded handling job #{entry.id}")
-            @queue.finish(entry)
-          err ->
-            handle_error({:returned, err})
-        end
+        payload
+        |> handle_job(state)
+        |> handle_result(entry)
       end
       defp handle_pop({:error, :queue_is_suspended}, state) do
         # change the queue status to running? = false
@@ -57,17 +53,17 @@ defmodule SolidQueue.Worker do
   defmacro __before_compile__(_env) do
     quote do
       
-      def handle_error({:returned, {:error, _} = err}) do
-        Slogger.error(@pretty_module <> "(#{inspect self()}) general error occured while handling job #{entry.id} #{inspect err}")
+      def handle_result(:ok, entry) do
+        Slogger.debug(@pretty_module <> "(#{inspect self()}) job #{entry.id} was a success!")
+        @queue.finish(entry)
+      end
+      def handle_result({:error, _} = err, entry) do
+        Slogger.error(@pretty_module <> "(#{inspect self()}) an error occured while handling job #{entry.id} #{inspect err}")
         @queue.errorize(entry, err)
       end
-      def handle_error({:returned, err}) do
-        Slogger.error(@pretty_module <> "(#{inspect self()}) bad return handling job #{entry.id} #{inspect err}")
+      def handle_result(err, entry) do
+        Slogger.error(@pretty_module <> "(#{inspect self()}) bad return from handling job #{entry.id} #{inspect err}")
         @queue.errorize(entry, {:error, {:invalid_return, err}})
-      end
-
-      def handle_error(anything) do
-        Slogger.warn("#{@pretty_module}.handle_error/1 got an unmatched/unhandled error. #{inspect anything}")
       end
 
       if !Module.defines?(__MODULE__, {:start_link, 1}) do
