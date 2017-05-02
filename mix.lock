@@ -1,0 +1,2 @@
+%{"slogger": {:hex, :slogger, "0.1.6", "79b5d72d21301f6d2983cd7ae6dd9f934591d09b23e28b173352757d0dd51295", [:mix], []},
+  "uuid": {:hex, :uuid, "1.1.7", "007afd58273bc0bc7f849c3bdc763e2f8124e83b957e515368c498b641f7ab69", [:mix], []}}
