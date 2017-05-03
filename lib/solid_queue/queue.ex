@@ -6,20 +6,34 @@ defmodule SolidQueue.Queue do
       import SolidQueue.Transaction
       alias SolidQueue.Entry
 
+      def inverse_pop do
+        transact do
+          __MODULE__
+          |> :mnesia.last
+          |> handle_pop
+        end
+      end
+
       def pop do
         transact do
-          with _ <- :ok,
-            id when is_integer(id)  <- :mnesia.first(__MODULE__),
-            {:ok, entry}            <- get_by_id(id),
-            :ok                     <- remove(id)
-          do
-            {:ok, entry}
-          else
-            :'$end_of_table' ->
-              {:error, :empty_queue}
-            err ->
-              err
-          end
+          __MODULE__
+          |> :mnesia.first
+          |> handle_pop
+        end
+      end
+
+      defp handle_pop(maybe_id) do
+        with _ <- :ok,
+          id when is_integer(id)  <- maybe_id,
+          {:ok, entry}            <- get_by_id(id),
+          :ok                     <- remove(id)
+        do
+          {:ok, entry}
+        else
+          :'$end_of_table' ->
+            {:error, :empty_queue}
+          err ->
+            err
         end
       end
 
