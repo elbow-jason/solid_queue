@@ -110,6 +110,21 @@ defmodule SolidQueue do
         entry
       end
 
+      def inverse_pop do
+        transact do
+          with :ok <- :ok,
+            :ok <- allowed_to_pop(),
+            {:ok, entry} <- Waiting.inverse_pop(),
+            entry <- InProgress.enqueue(entry)
+          do
+            {:ok, entry}
+          else
+            {:error, _} = err ->
+              err
+          end
+        end
+      end
+
       def pop do
         transact do
           with :ok <- :ok,
