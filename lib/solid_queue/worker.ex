@@ -31,7 +31,7 @@ defmodule SolidQueue.Worker do
 
       defp handle_pop({:ok, %Entry{payload: payload} = entry}, state) do
         #call handle_job and (:ok) finish job or {:error, _} errorize job
-        Slogger.debug(@pretty_module <> "(#{inspect self()}) begins handling job #{entry.id} #{inspect entry}")
+        log_begin(entry)
         payload
         |> handle_job(state)
         |> handle_result(entry)
@@ -52,18 +52,16 @@ defmodule SolidQueue.Worker do
 
   defmacro __before_compile__(_env) do
     quote do
+
+      alias SolidQueue.Entry
       
       def handle_result(:ok, entry) do
-        Slogger.debug(@pretty_module <> "(#{inspect self()}) job #{entry.id} was a success!")
+        log_result_ok(entry)
         @queue.finish(entry)
       end
       def handle_result({:error, _} = err, entry) do
-        Slogger.error(@pretty_module <> "(#{inspect self()}) an error occured while handling job #{entry.id} #{inspect err}")
+        log_result_error(entry, err)
         @queue.errorize(entry, err)
-      end
-      def handle_result(err, entry) do
-        Slogger.error(@pretty_module <> "(#{inspect self()}) bad return from handling job #{entry.id} #{inspect err}")
-        @queue.errorize(entry, {:error, {:invalid_return, err}})
       end
 
       if !Module.defines?(__MODULE__, {:start_link, 1}) do
@@ -75,6 +73,24 @@ defmodule SolidQueue.Worker do
             err ->
               err
           end
+        end
+      end
+
+      if !Module.defines?(__MODULE__, {:log_begin, 1}) do
+        def log_begin(%Entry{} = entry) do
+          Slogger.debug(@pretty_module <> "(#{inspect self()}) begins handling job #{entry.id} #{inspect entry}")
+        end
+      end
+
+      if !Module.defines?(__MODULE__, {:log_result_ok, 1}) do
+        def log_result_ok(%Entry{} = entry) do
+          Slogger.debug(@pretty_module <> "(#{inspect self()}) job #{entry.id} was a success!")
+        end
+      end
+
+      if !Module.defines?(__MODULE__, {:log_result_error, 1}) do
+        def log_result_error(%Entry{} = entry, err) do
+          Slogger.error(@pretty_module <> "(#{inspect self()}) an error occured while handling job #{entry.id} #{inspect err}")
         end
       end
 
